@@ -1,1 +1,1 @@
-# Metal-Surface-Defect-Detection
+# Brain images classification
