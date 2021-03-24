@@ -1,1 +1,2 @@
-# Brain images classification
+# Convlutional Neural Network for defect detection and classification
+
