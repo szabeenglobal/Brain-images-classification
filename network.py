@@ -19,17 +19,25 @@ class Dataset(torch.utils.data.Dataset):
 
         self.path = path 
         self.df = pd.read_csv("/home/dara/Documents/suraiya/data/train.csv")
-        self.df.set_index("ImageId", inplace=True)
+        #self.df.set_index("ImageId", inplace=True)
 
-        self.file_names = list(path.glob("*.jpg"))
+        #self.file_names = list(path.glob("*.jpg"))
 
     def __getitem__(self, index):
 
-        path = self.file_names[index] 
+        path = f"../data/train_images/{self.df.iloc[index, 0]}"
+        
+
+        #self.file_names[index] 
         image = Image.open(path)
 
         image_tensor = torchvision.transforms.functional.to_tensor(image)
-        label = self.df.loc[path.name]["ClassId"] 
+
+        #image_tensor = torchvision.transforms.functional.resize(image_tensor, [1600,256])
+        
+        #torchvision.transforms.CenterCrop(size)
+
+        label = self.df.iloc[index]["ClassId"] 
         
         return image_tensor,label
 
@@ -56,9 +64,9 @@ class Model(torch.nn.Module):
         
 
         self.layers = torch.nn.Sequential(
-            torch.nn.Conv2d(3,128, kernel_size=3, stride=1, padding=0),
+            torch.nn.Conv2d(3,128, kernel_size=3, stride=1, padding=1),
             torch.nn.LeakyReLU(128,128),
-            torch.nn.Conv2d(128, 128, kernel_size=3, stride=1, padding=0),
+            torch.nn.Conv2d(128, 128, kernel_size=3, stride=1, padding=1),
             torch.nn.LeakyReLU(128,128),
             torch.nn.Linear(128, 128)
         )
@@ -67,7 +75,15 @@ class Model(torch.nn.Module):
 
         return self.layers(X)
 
+model = Model()
 
+for batch in train_data_loader:
+    
+    X, y = batch
+    
+    #print(batch)
+    model(X)
+    
 
     
 
@@ -127,3 +143,5 @@ class Model(torch.nn.Module):
 #data_loader.train_dataloader()
 ## %%
 #
+
+# %%
