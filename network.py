@@ -31,7 +31,7 @@ class Dataset(torch.utils.data.Dataset):
 
     def __getitem__(self, index):
 
-        path = f"../data/train_images/{self.df.iloc[index, 0]}"
+        path = f"./data/train_images/{self.df.iloc[index, 0]}"
         image = Image.open(path)
 
         if self.transform: 
@@ -121,64 +121,5 @@ for batch in train_data_loader:
     optimiser.zero_grad()
     print(f"this is our loss: {loss.item()}")
     
-
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#
-##%%
-#
-#class SteelDefects(pl.LightningDataModule): 
-#    def __init__(self, TRAINDATAPATH: str, TESTDATAPATH: str, batch_size):
-#        super().__init__()
-#
-#        self.train_data_dir = TRAINDATAPATH
-#        self.test_data_dir = TESTDATAPATH
-#        self.batch_size = batch_size
-#        self.transformation = torchvision.transforms.ToTensor()
-#        self.setup()
-#
-#
-#    def setup(self, stage=None):
-#        self.steel_defects_test = Dataset(TESTDATAPATH, df)
-#        
-#        steel_defects_train = Dataset(TRAINDATAPATH, df)
-#        
-#        self.steel_defects_train, self.steel_defects_val = torch.utils.data.random_split(
-#            steel_defects_train, [11000, 1568]
-#        )
-#
-#    def train_dataloader(self):
-#        return torch.utils.data.DataLoader(
-#            self.steel_defects_train, batch_size=self.batch_size, shuffle=True
-#        )
-#
-#    def val_dataloader(self):
-#        return torch.utils.data.DataLoader(self.steel_defects_val, batch_size=self.batch_size)
-#
-#    def test_dataloader(self):
-#        return torch.utils.data.DataLoader(self.steel_defects_test, batch_size=self.batch_size)
-#
-#
-#data_loader = SteelDefects(TRAINDATAPATH, TESTDATAPATH, 500) 
-#
-## %%
-#data_loader.train_dataloader()
-## %%
-#
 
 # %%
