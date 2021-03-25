@@ -2,7 +2,8 @@
 #make your imports 
 import torch
 from torch.utils.data import DataLoader, random_split
-import torchvision
+from torchvision import transforms 
+#import torchvision
 from PIL import Image
 import pytorch_lightning as pl
 import pandas as pd
@@ -15,30 +16,30 @@ TESTDATAPATH = pathlib.Path("/home/dara/Documents/suraiya/data/test_images")
 
 #%%
 class Dataset(torch.utils.data.Dataset):
-    def __init__(self, path):
+    def __init__(self, path, transform=None):
 
         self.path = path 
         self.df = pd.read_csv("/home/dara/Documents/suraiya/data/train.csv")
-        #self.df.set_index("ImageId", inplace=True)
 
-        #self.file_names = list(path.glob("*.jpg"))
+        if transform == None: 
+            self.transform = transforms.Compose([
+                transforms.Resize((400,64)),
+                transforms.ToTensor()
+            ])
+        else:
+            self.transform = transform
+
+
 
     def __getitem__(self, index):
 
         path = f"../data/train_images/{self.df.iloc[index, 0]}"
-        
-
-        #self.file_names[index] 
         image = Image.open(path)
 
-        image_tensor = torchvision.transforms.functional.to_tensor(image)
-
-        #image_tensor = torchvision.transforms.functional.resize(image_tensor, [1600,256])
-        
-        #torchvision.transforms.CenterCrop(size)
+        if self.transform: 
+            image_tensor = self.transform(image)
 
         label = self.df.iloc[index]["ClassId"] 
-        
         return image_tensor,label
 
     def __len__(self):
@@ -63,16 +64,46 @@ class Model(torch.nn.Module):
         super().__init__()
         
 
+        
         self.layers = torch.nn.Sequential(
-            torch.nn.Conv2d(3,128, kernel_size=3, stride=1, padding=1),
-            torch.nn.LeakyReLU(128,128),
-            torch.nn.Conv2d(128, 128, kernel_size=3, stride=1, padding=1),
-            torch.nn.LeakyReLU(128,128),
-            torch.nn.Linear(128, 128)
+            torch.nn.Conv2d(3, 64, kernel_size=3, stride=1,
+                            padding=1, dilation=1),
+            torch.nn.LeakyReLU(),
+            torch.nn.Conv2d(64, 64, kernel_size=3,
+                            stride=1, padding=1, dilation=1),
+            torch.nn.LeakyReLU(),
+            # torch.nn.MaxPool2d(kernel_size=2, stride=None),
+            # torch.nn.Conv2d(128, 128, kernel_size=3,
+            #                 stride=1, padding=1),
+            # torch.nn.LeakyReLU(),
+            # torch.nn.Conv2d(128, 128, kernel_size=3,
+            #                 stride=1, padding=1),
+            # torch.nn.LeakyReLU(),
+            # torch.nn.Conv2d(128, 128, kernel_size=3,
+            #                 stride=1, padding=1),
+            # torch.nn.LeakyReLU(),
+            # torch.nn.MaxPool2d(kernel_size=2),
+            # torch.nn.Conv2d(256, 256, kernel_size=3,
+            #                 stride=1, padding=1),
+            # torch.nn.LeakyReLU(),
+            # torch.nn.Conv2d(256, 256, kernel_size=3,
+            #                 stride=1, padding=1),
+            # torch.nn.LeakyReLU(),
+            # torch.nn.Conv2d(256, 256, kernel_size=3,
+            #                 stride=1, padding=1),
+            # torch.nn.MaxPool2d(kernel_size=2),
+            # torch.nn.Conv2d(512, 512, kernel_size=3,
+            #                 stride=1, padding=1),
+            # torch.nn.LeakyReLU(),
+            # torch.nn.Conv2d(512, 512, kernel_size=3,
+            #                 stride=1, padding=1),
+            torch.nn.MaxPool2d(kernel_size=2),
+            torch.nn.Flatten(),
+            torch.nn.Linear(409600, 4)
         )
 
     def forward(self, X):
-
+        #this needs to be a range of values, what are we outputting 
         return self.layers(X)
 
 model = Model()
@@ -81,8 +112,9 @@ for batch in train_data_loader:
     
     X, y = batch
     
-    #print(batch)
     model(X)
+
+    #get lossfunction with model x > compare with labels, use backward method, optimise (remember to zero grad) 
     
 
     
