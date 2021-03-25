@@ -3,7 +3,6 @@
 import torch
 from torch.utils.data import DataLoader, random_split
 from torchvision import transforms 
-#import torchvision
 from PIL import Image
 import pytorch_lightning as pl
 import pandas as pd
@@ -30,7 +29,6 @@ class Dataset(torch.utils.data.Dataset):
             self.transform = transform
 
 
-
     def __getitem__(self, index):
 
         path = f"../data/train_images/{self.df.iloc[index, 0]}"
@@ -39,7 +37,8 @@ class Dataset(torch.utils.data.Dataset):
         if self.transform: 
             image_tensor = self.transform(image)
 
-        label = self.df.iloc[index]["ClassId"] 
+        label = self.df.iloc[index]["ClassId"]
+        label -= 1
         return image_tensor,label
 
     def __len__(self):
@@ -100,21 +99,27 @@ class Model(torch.nn.Module):
             torch.nn.MaxPool2d(kernel_size=2),
             torch.nn.Flatten(),
             torch.nn.Linear(409600, 4)
-        )
+        )                    
 
     def forward(self, X):
         #this needs to be a range of values, what are we outputting 
-        return self.layers(X)
+        return self.layers(X)  
 
 model = Model()
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+model.to(device)
+optimiser = torch.optim.Adam(model.parameters(), lr=0.1)
 
 for batch in train_data_loader:
     
     X, y = batch
-    
-    model(X)
-
-    #get lossfunction with model x > compare with labels, use backward method, optimise (remember to zero grad) 
+    X, y = X.to(device), y.to(device)
+    outputs = model(X)
+    loss = torch.nn.functional.cross_entropy(outputs, y)
+    loss.backward()
+    optimiser.step()
+    optimiser.zero_grad()
+    print(f"this is our loss: {loss.item()}")
     
 
     
