@@ -9,6 +9,7 @@ import pandas as pd
 import os
 import pathlib 
 import dataclasses
+from torch.utils.tensorboard import SummaryWriter
 
 TRAINDATAPATH = pathlib.Path("./data/train_images")
 TESTDATAPATH = pathlib.Path("./data/test_images")
@@ -53,10 +54,10 @@ train_len = int(0.9 * len(train_dataset))
 val_len = len(train_dataset) - train_len
 
 train_data, val_data = random_split(train_dataset, [train_len, val_len])
-
-train_data_loader = DataLoader(train_data, batch_size=4, shuffle=True, pin_memory=torch.cuda.is_available())
-val_data_loader = DataLoader(val_data, batch_size=4, shuffle=False, pin_memory=torch.cuda.is_available())
-test_data_loader = DataLoader(test_data, batch_size=4, shuffle=False, pin_memory=torch.cuda.is_available())
+batch_size = 32
+train_data_loader = DataLoader(train_data, batch_size, shuffle=True, pin_memory=torch.cuda.is_available())
+val_data_loader = DataLoader(val_data, batch_size, shuffle=False, pin_memory=torch.cuda.is_available())
+test_data_loader = DataLoader(test_data, batch_size, shuffle=False, pin_memory=torch.cuda.is_available())
 
 class Model(torch.nn.Module):
     def __init__(self):
@@ -109,8 +110,8 @@ model = Model()
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model.to(device)
 optimiser = torch.optim.Adam(model.parameters(), lr=0.1)
-
-for batch in train_data_loader:
+writer = SummaryWriter(log_dir=f"runs/sdd")
+for batch_idx, batch in enumerate(train_data_loader):
     
     X, y = batch
     X, y = X.to(device), y.to(device)
@@ -119,7 +120,12 @@ for batch in train_data_loader:
     loss.backward()
     optimiser.step()
     optimiser.zero_grad()
-    print(f"this is our loss: {loss.item()}")
+    print(f"loss: {loss.item()}")
+    
+    writer.add_scalar('Loss/Train', loss.item(), batch_idx )
+    
+
+
     
 
 # %%
