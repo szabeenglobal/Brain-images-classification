@@ -4,21 +4,21 @@ import torch
 from torch.utils.data import DataLoader, random_split
 from torchvision import transforms 
 from PIL import Image
-import pytorch_lightning as pl
+# import pytorch_lightning as pl
 import pandas as pd
 import os
 import pathlib 
 import dataclasses
 
-TRAINDATAPATH = pathlib.Path("/home/dara/Documents/suraiya/data/train_images")
-TESTDATAPATH = pathlib.Path("/home/dara/Documents/suraiya/data/test_images")
+TRAINDATAPATH = pathlib.Path("./data/train_images")
+TESTDATAPATH = pathlib.Path("./data/test_images")
 
 #%%
 class Dataset(torch.utils.data.Dataset):
     def __init__(self, path, transform=None):
 
         self.path = path 
-        self.df = pd.read_csv("/home/dara/Documents/suraiya/data/train.csv")
+        self.df = pd.read_csv("./data/train.csv")
 
         if transform == None: 
             self.transform = transforms.Compose([
