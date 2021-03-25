@@ -10,6 +10,7 @@ import os
 import pathlib 
 import dataclasses
 from torch.utils.tensorboard import SummaryWriter
+from time import time 
 
 TRAINDATAPATH = pathlib.Path("./data/train_images")
 TESTDATAPATH = pathlib.Path("./data/test_images")
@@ -19,7 +20,7 @@ class Dataset(torch.utils.data.Dataset):
     def __init__(self, path, transform=None):
 
         self.path = path 
-        self.df = pd.read_csv("./data/train.csv")
+        self.df = pd.read_csv("../data/train.csv")
 
         if transform == None: 
             self.transform = transforms.Compose([
@@ -32,7 +33,7 @@ class Dataset(torch.utils.data.Dataset):
 
     def __getitem__(self, index):
 
-        path = f"./data/train_images/{self.df.iloc[index, 0]}"
+        path = f"../data/train_images/{self.df.iloc[index, 0]}"
         image = Image.open(path)
 
         if self.transform: 
@@ -99,33 +100,66 @@ class Model(torch.nn.Module):
             #                 stride=1, padding=1),
             torch.nn.MaxPool2d(kernel_size=2),
             torch.nn.Flatten(),
-            torch.nn.Linear(409600, 4)
+            torch.nn.Linear(409600, 4),
         )                    
 
     def forward(self, X):
         #this needs to be a range of values, what are we outputting 
         return self.layers(X)  
 
+def check_accuracy(data_loader, model, device):
+    model.eval()
+    num_correct = 0 
+    num_samples = 0
+
+    for X, y in data_loader:
+        X = X.to(device=device)
+        y = y.to(device=device)
+
+        scores = model(X)
+        predictions = scores.argmax(1)
+
+        num_correct += (predictions == y).sum()
+        num_samples += predictions.size(0)
+
+    print(
+        f'Got {num_correct} / {num_samples} with accuracy {float(num_correct)/float(num_samples)*100:.2f}')
+
+    model.train()
+
+
 model = Model()
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model.to(device)
-optimiser = torch.optim.Adam(model.parameters(), lr=0.1)
-writer = SummaryWriter(log_dir=f"runs/sdd")
-for batch_idx, batch in enumerate(train_data_loader):
+epochs = 50 
+learning_rate = 0.1
+optimiser = torch.optim.Adam(model.parameters(), lr=learning_rate)
+writer = SummaryWriter(log_dir=f"runs/sdd-{time()}")
+
+batch_idx = 0
+
+for epoch in range(epochs):
+
+    check_accuracy(val_data_loader, model, device)
     
-    X, y = batch
-    X, y = X.to(device), y.to(device)
-    outputs = model(X)
-    loss = torch.nn.functional.cross_entropy(outputs, y)
-    loss.backward()
-    optimiser.step()
-    optimiser.zero_grad()
-    print(f"loss: {loss.item()}")
-    
-    writer.add_scalar('Loss/Train', loss.item(), batch_idx )
+    for batch in train_data_loader:
+        
+        X, y = batch
+        X, y = X.to(device), y.to(device)
+        outputs = model(X)
+        loss = torch.nn.functional.cross_entropy(outputs, y)
+        loss.backward()
+        optimiser.step()
+        optimiser.zero_grad()
+        print(f"Epoch number: {epoch}, loss: {loss.item()}")
+        writer.add_scalar('Loss/Train', loss.item(), batch_idx)
+        batch_idx += 1
+
     
 
 
     
+
+# %%
 
 # %%
