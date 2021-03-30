@@ -1,4 +1,6 @@
 #%%
+#check this code for an easy way to make nn layers 
+#https://github.com/szymonmaszke/torchlayers 
 #make your imports 
 import torch
 from torch.utils.data import DataLoader, random_split
@@ -55,7 +57,7 @@ train_len = int(0.9 * len(train_dataset))
 val_len = len(train_dataset) - train_len
 
 train_data, val_data = random_split(train_dataset, [train_len, val_len])
-batch_size = 32
+batch_size = 8
 train_data_loader = DataLoader(train_data, batch_size, shuffle=True, pin_memory=torch.cuda.is_available())
 val_data_loader = DataLoader(val_data, batch_size, shuffle=False, pin_memory=torch.cuda.is_available())
 test_data_loader = DataLoader(test_data, batch_size, shuffle=False, pin_memory=torch.cuda.is_available())
@@ -73,34 +75,34 @@ class Model(torch.nn.Module):
             torch.nn.Conv2d(64, 64, kernel_size=3,
                             stride=1, padding=1, dilation=1),
             torch.nn.LeakyReLU(),
-            #torch.nn.MaxPool2d(kernel_size=2, stride=None),
-            #torch.nn.Conv2d(128, 128, kernel_size=3,
-            #                stride=1, padding=1),
-            #torch.nn.LeakyReLU(),
-            #torch.nn.Conv2d(128, 128, kernel_size=3,
-            #                stride=1, padding=1),
-            #torch.nn.LeakyReLU(),
-            #torch.nn.Conv2d(128, 128, kernel_size=3,
-            #                stride=1, padding=1),
-            #torch.nn.LeakyReLU(),
-            #torch.nn.MaxPool2d(kernel_size=2),
-            #torch.nn.Conv2d(256, 256, kernel_size=3,
-            #                stride=1, padding=1),
-            #torch.nn.LeakyReLU(),
-            #torch.nn.Conv2d(256, 256, kernel_size=3,
-            #                stride=1, padding=1),
-            #torch.nn.LeakyReLU(),
-            #torch.nn.Conv2d(256, 256, kernel_size=3,
-            #                stride=1, padding=1),
-            #torch.nn.MaxPool2d(kernel_size=2),
-            #torch.nn.Conv2d(512, 512, kernel_size=3,
-            #                stride=1, padding=1),
-            #torch.nn.LeakyReLU(),
-            #torch.nn.Conv2d(512, 512, kernel_size=3,
-            #                stride=1, padding=1),
+            torch.nn.MaxPool2d(kernel_size=2, stride=None),
+            torch.nn.Conv2d(64, 128, kernel_size=3,
+                            stride=1, padding=1),
+            torch.nn.LeakyReLU(),
+            torch.nn.Conv2d(128, 128, kernel_size=3,
+                            stride=1, padding=1),
+            torch.nn.LeakyReLU(),
+            torch.nn.Conv2d(128, 128, kernel_size=3,
+                            stride=1, padding=1),
+            torch.nn.LeakyReLU(),
             torch.nn.MaxPool2d(kernel_size=2),
+            torch.nn.Conv2d(128, 256, kernel_size=3,
+                            stride=1, padding=1),
+            torch.nn.LeakyReLU(),
+            torch.nn.Conv2d(256, 256, kernel_size=3,
+                            stride=1, padding=1),
+            torch.nn.LeakyReLU(),
+            torch.nn.Conv2d(256, 256, kernel_size=3,
+                            stride=1, padding=1),
+            torch.nn.MaxPool2d(kernel_size=2),
+            torch.nn.Conv2d(256, 512, kernel_size=3,
+                            stride=1, padding=1),
+            torch.nn.LeakyReLU(),
+            torch.nn.Conv2d(512, 512, kernel_size=3,
+                            stride=1, padding=1),
+            torch.nn.AdaptiveMaxPool2d(1),
             torch.nn.Flatten(),
-            torch.nn.Linear(409600, 4),
+            torch.nn.Linear(512, 4),
         )                    
 
     def forward(self, X):
@@ -132,7 +134,7 @@ model = Model()
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model.to(device)
 epochs = 50 
-learning_rate = 0.001
+learning_rate = 0.0003
 optimiser = torch.optim.Adam(model.parameters(), lr=learning_rate)
 writer = SummaryWriter(log_dir=f"runs/sdd-{time()}")
 
@@ -147,10 +149,11 @@ for epoch in range(epochs):
         X, y = batch
         X, y = X.to(device), y.to(device)
         outputs = model(X)
-        loss = torch.nn.functional.cross_entropy(outputs, y)
+        loss = torch.nn.functional.cross_entropy(outputs, y) / 16
         loss.backward()
-        optimiser.step()
-        optimiser.zero_grad()
+        if batch_idx % 16 == 0:
+            optimiser.step()
+            optimiser.zero_grad()
         print(f"Epoch number: {epoch}, loss: {loss.item()}")
         writer.add_scalar('Loss/Train', loss.item(), batch_idx)
         batch_idx += 1
@@ -161,5 +164,6 @@ for epoch in range(epochs):
     
 
 # %%
+check_accuracy(val_data_loader, model, device)
 
 # %%
